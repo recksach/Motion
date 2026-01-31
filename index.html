@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Motion Pro | Kling Clone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js"></script>
+    <style>
+        body { background: #0a0a0c; color: #e2e2e7; }
+        .glass { background: rgba(23, 23, 27, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .gradient-border { border: 2px solid transparent; background-image: linear-gradient(#0a0a0c, #0a0a0c), linear-gradient(to right, #8b5cf6, #3b82f6); background-origin: border-box; background-clip: padding-box, border-box; }
+        .loader { border-top-color: #8b5cf6; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-10">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center font-bold text-xl">K</div>
+                <h1 class="text-xl font-bold tracking-tight">MOTION <span class="text-purple-500">CONTROL</span></h1>
+            </div>
+            <div class="text-sm text-gray-500">Mode: Full Body Mimic</div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="space-y-6">
+                <div class="glass p-6 rounded-3xl">
+                    <label class="block text-sm font-medium mb-4">1. Фото персонажа</label>
+                    <div id="dropzone1" class="border-2 border-dashed border-gray-700 rounded-2xl p-4 text-center hover:border-purple-500 transition cursor-pointer">
+                        <input type="file" id="imageInput" accept="image/*" class="hidden">
+                        <p id="imgLabel" class="text-gray-500 text-sm">Нажмите или перетащите фото</p>
+                        <img id="imgPreview" class="hidden mt-2 rounded-lg max-h-40 mx-auto">
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-3xl">
+                    <label class="block text-sm font-medium mb-4">2. Видео-драйвер (ваши жесты)</label>
+                    <div id="dropzone2" class="border-2 border-dashed border-gray-700 rounded-2xl p-4 text-center hover:border-blue-500 transition cursor-pointer">
+                        <input type="file" id="videoInput" accept="video/*" class="hidden">
+                        <p id="vidLabel" class="text-gray-500 text-sm">Загрузите видео с движениями</p>
+                        <video id="vidPreview" class="hidden mt-2 rounded-lg max-h-40 mx-auto" controls></video>
+                    </div>
+                </div>
+
+                <button id="startBtn" class="w-full py-4 rounded-2xl bg-white text-black font-bold text-lg hover:bg-purple-500 hover:text-white transition-all shadow-xl shadow-purple-500/20">
+                    Сгенерировать анимацию
+                </button>
+            </div>
+
+            <div class="lg:col-span-2">
+                <div class="glass rounded-3xl h-[600px] flex flex-col items-center justify-center relative overflow-hidden gradient-border">
+                    <div id="loadingState" class="hidden flex flex-col items-center z-20">
+                        <div class="loader w-12 h-12 border-4 border-gray-700 rounded-full mb-4"></div>
+                        <p class="text-purple-400 font-mono animate-pulse">ОБРАБОТКА ЖЕСТОВ...</p>
+                    </div>
+                    
+                    <div id="placeholder" class="text-center">
+                        <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <p class="text-gray-600">Результат появится здесь</p>
+                    </div>
+
+                    <video id="finalVideo" class="hidden absolute inset-0 w-full h-full object-contain" controls></video>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Логика работы интерфейса
+        const imageInput = document.getElementById('imageInput');
+        const videoInput = document.getElementById('videoInput');
+        const startBtn = document.getElementById('startBtn');
+
+        // Обработка превью
+        imageInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('imgPreview').src = URL.createObjectURL(file);
+                document.getElementById('imgPreview').classList.remove('hidden');
+                document.getElementById('imgLabel').classList.add('hidden');
+            }
+        };
+
+        videoInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('vidPreview').src = URL.createObjectURL(file);
+                document.getElementById('vidPreview').classList.remove('hidden');
+                document.getElementById('vidLabel').classList.add('hidden');
+            }
+        };
+
+        // Имитация подключения к API (для работы нужно подставить свой API Key или развернуть MimicMotion)
+        startBtn.onclick = async () => {
+            if (!imageInput.files[0] || !videoInput.files[0]) {
+                alert("Загрузите и фото, и видео!");
+                return;
+            }
+
+            document.getElementById('placeholder').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            startBtn.disabled = true;
+            startBtn.innerText = "Генерация...";
+
+            // Эмуляция задержки (в реальности здесь идет запрос к HuggingFace API)
+            setTimeout(() => {
+                document.getElementById('loadingState').classList.add('hidden');
+                alert("Для работы полноценной нейросети нужен сервер. Этот HTML готов к подключению API MimicMotion.");
+                startBtn.disabled = false;
+                startBtn.innerText = "Сгенерировать анимацию";
+            }, 5000);
+        };
+
+        document.getElementById('dropzone1').onclick = () => imageInput.click();
+        document.getElementById('dropzone2').onclick = () => videoInput.click();
+    </script>
+</body>
+</html>
